@@ -1,2 +1,2 @@
 # Saber-Fencing---Cords
-Visualize cords
+A Guide to Visualize Eletric Saber Fencing Mechanics with Descriptions covering Common Issues faced when utilizing Wired Cords

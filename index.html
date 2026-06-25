@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sabre Cord Anatomy — Interactive Guide</title>
+<style>
+  :root{
+    --bg: #12161c;
+    --panel: #1a2029;
+    --steel: #c7d0d9;
+    --copper: #c97a4a;
+    --copper-bright: #e8965f;
+    --brass: #d4af6a;
+    --fault: #d6553f;
+    --muted: #6b7686;
+    --line: #2a323e;
+    --display-font: 'Fjalla One', 'Arial Narrow', sans-serif;
+    --body-font: 'Inter', -apple-system, sans-serif;
+    --mono-font: 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    background: var(--bg);
+    color: var(--steel);
+    font-family: var(--body-font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* faint piste-line texture across the whole page */
+  body::before{
+    content:"";
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      90deg, transparent, transparent 119px, rgba(255,255,255,0.02) 119px, rgba(255,255,255,0.02) 120px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header{
+    position: relative;
+    z-index: 1;
+    padding: 48px 32px 28px;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .eyebrow{
+    font-family: var(--mono-font);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--copper-bright);
+    margin-bottom: 14px;
+  }
+
+  h1{
+    font-family: var(--display-font);
+    font-weight: 400;
+    font-size: clamp(32px, 6vw, 58px);
+    letter-spacing: 0.01em;
+    color: #f1f4f7;
+    text-transform: uppercase;
+    line-height: 1.05;
+  }
+
+  .subhead{
+    margin-top: 14px;
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+  }
+
+  main{
+    position: relative;
+    z-index: 1;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 36px 24px 80px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .scene-wrap{
+    position: relative;
+    background: linear-gradient(180deg, #161b22 0%, #11151b 100%);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  #canvas-container{
+    width: 100%;
+    height: 620px;
+    cursor: grab;
+    touch-action: none;
+  }
+  #canvas-container:active{ cursor: grabbing; }
+
+  .scene-hint{
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    font-family: var(--mono-font);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .scene-hint span{ color: var(--copper-bright); }
+
+  .panel-toggle{
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    gap: 8px;
+    font-family: var(--mono-font);
+    font-size: 11px;
+  }
+  .toggle-btn{
+    background: rgba(20,25,32,0.85);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 7px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s ease;
+  }
+  .toggle-btn:hover{ color: var(--steel); border-color: var(--copper); }
+  .toggle-btn.active{ color: var(--bg); background: var(--copper-bright); border-color: var(--copper-bright); }
+
+  /* tooltip card */
+  #tooltip{
+    position: absolute;
+    pointer-events: none;
+    max-width: 300px;
+    background: rgba(18,22,28,0.97);
+    border: 1px solid var(--copper);
+    border-left: 3px solid var(--copper-bright);
+    border-radius: 3px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--steel);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    z-index: 20;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  }
+  #tooltip.fault{ border-color: var(--fault); border-left-color: var(--fault); }
+  #tooltip .tt-label{
+    font-family: var(--mono-font);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--copper-bright);
+    margin-bottom: 6px;
+  }
+  #tooltip.fault .tt-label{ color: var(--fault); }
+  #tooltip .tt-title{
+    font-family: var(--display-font);
+    font-size: 17px;
+    color: #f1f4f7;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.01em;
+  }
+  #tooltip .tt-section{
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+  }
+  #tooltip .tt-section-label{
+    font-family: var(--mono-font);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  /* legend / part list below scene */
+  .legend{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .legend-item{
+    background: var(--panel);
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    border-left: 3px solid transparent;
+  }
+  .legend-item:hover, .legend-item.active{
+    background: #20283380;
+    border-left-color: var(--copper-bright);
+  }
+  .legend-item .li-name{
+    font-family: var(--display-font);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #e4e8ec;
+  }
+  .legend-item .li-sub{
+    font-family: var(--mono-font);
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.03em;
+  }
+
+  footer{
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 28px 24px 40px;
+    font-family: var(--mono-font);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (max-width: 640px){
+    #canvas-container{ height: 460px; }
+    .scene-hint{ font-size: 10px; bottom: 10px; left: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">A · B · C Lines — Sabre Scoring Circuit</div>
+  <h1>How Your Cords Actually Work</h1>
+  <p class="subhead">Rotate the rig below to see how the mask, lamé, and sabre connect to the reel. Hover any part for what it does, and what tends to go wrong with it.</p>
+</header>
+
+<main>
+  <div class="scene-wrap">
+    <div id="canvas-container"></div>
+    <div id="tooltip"></div>
+    <div class="panel-toggle">
+      <div class="toggle-btn active" id="mode-rotate">Auto-rotate</div>
+      <div class="toggle-btn" id="mode-fault">Fault points</div>
+    </div>
+    <div class="scene-hint">
+      <span>Drag</span> to rotate · <span>Scroll</span> to zoom · <span>Hover</span> a part for details
+    </div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+</main>
+
+<footer>
+  Built for fencers, by way of a curious coach. Geometry is schematic, not to scale.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  // Fallback: if the primary CDN failed to load Three.js for any reason
+  // (network block, CDN outage, ad blocker), try a second CDN before giving up.
+  if (typeof THREE === 'undefined') {
+    document.write('<scr' + 'ipt src="https://unpkg.com/three@0.128.0/build/three.min.js"></scr' + 'ipt>');
+  }
+</script>
+<script>
+  if (typeof THREE === 'undefined') {
+    document.getElementById('canvas-container').innerHTML =
+      '<div style="padding:40px;color:#d6553f;font-family:monospace;font-size:13px;">' +
+      '3D library failed to load. Check your internet connection and refresh — ' +
+      'if this keeps happening, your network or an extension may be blocking cdnjs.cloudflare.com or unpkg.com.' +
+      '</div>';
+  }
+</script>
+<script>
+// ===================== DATA: parts + descriptions =====================
+const PARTS = {
+  mask: {
+    name: "Mask (Conductive Mesh)",
+    sub: "TARGET · MASK",
+    label: "Target surface",
+    title: "Mask",
+    body: "The sabre mask mesh is electrically conductive and counts as valid target, just like the lamé. It's wired to the lamé through the mask cord so a hit on the mask reads as a scoring touch, not an off-target hit.",
+    fault: "ISSUE: Intermittent or no light on mask hits.",
+    faultBody: "Usually a broken strand inside the mask cord near the clip, a corroded mesh contact point, or the clip not biting cleanly onto the mesh. Wiggle-test the cord at both clips while a teammate watches the box — a flickering light pinpoints where the break is."
+  },
+  maskCord: {
+    name: "Mask Cord (Head Wire)",
+    sub: "LINK · MASK ↔ LAMÉ",
+    label: "Bridges mask & lamé",
+    title: "Mask Cord",
+    body: "A short wire with a crocodile clip at each end. One clip bites the mask mesh, the other clips to a contact point on the back or shoulder of the lamé, putting the mask on the same electrical circuit as the jacket.",
+    fault: "ISSUE: Mask doesn't register, or registers as 'off-target' equivalent.",
+    faultBody: "Check both crocodile clips for a tight, deliberate bite — a clip resting loosely on fabric instead of clamping bare mesh/lamé contact will cause dropouts. Corrosion or fraying right where the wire meets the clip is the single most common failure point on this cord."
+  },
+  lame: {
+    name: "Lamé (Conductive Jacket)",
+    sub: "TARGET · BODY",
+    label: "Target surface",
+    title: "Lamé",
+    body: "The metallic over-jacket is the valid target area for sabre (everything above the waist, including the mask, thanks to the mask cord). It completes the circuit: when the blade touches the lamé, current flows through the jacket and registers a colored light.",
+    fault: "ISSUE: Inconsistent contact, false or missing touches.",
+    faultBody: "Conductive thread wears thin at friction points (under the arm, across the shoulders) over many washes and bouts. A patchy or worn lamé can cause missed touches even with a perfect cord — equipment checks test resistance across the whole jacket for this reason."
+  },
+  bodyCordClip: {
+    name: "Alligator Clip (Lamé Line)",
+    sub: "BODY CORD · A LINE",
+    label: "Clips to lamé hem",
+    title: "Alligator Clip",
+    body: "This clip bites onto the bottom hem of the lamé on your weapon-arm side. It's the third connection point that completes the lamé/mask circuit (the 'A line'), separate from the two pins that plug into the weapon.",
+    fault: "ISSUE: Clip slips off mid-bout, or won't grip the hem.",
+    faultBody: "Regulations require the clip on the weapon-arm side specifically, partly so it can't be ripped off easily during an exchange. A worn-out spring or a hem that's frayed/thin won't hold a firm bite — replace the clip or have the lamé hem reinforced if it keeps slipping."
+  },
+  bodyCordPins: {
+    name: "Weapon-End Plug (2-Pin)",
+    sub: "BODY CORD · WEAPON END",
+    label: "Plugs into sabre guard",
+    title: "Weapon-End Plug",
+    body: "Sabre body cords use two irregularly-sized pins (or a twist-lock bayonet) that plug into a socket inside the weapon's guard — one pin for the blade/tip circuit, one for the weapon-line return. A small clip or sleeve secures it so it can't pop loose during play.",
+    fault: "ISSUE: White lights (off-target signal) appear constantly, or weapon shows no contact.",
+    faultBody: "Bent, compressed, or oxidized pins are the classic culprit — pins flatten over time and lose firm contact with the socket. This is also the point fencers re-tie a snapped cord through the sleeve mid-bout, since you can't disrobe to swap a body cord during a competition."
+  },
+  bodyCordWire: {
+    name: "Body Cord (Sleeve Run)",
+    sub: "BODY CORD · A/B LINES",
+    label: "Runs through jacket sleeve",
+    title: "Body Cord",
+    body: "Threaded through the sleeve of your weapon arm, this cord carries the lamé line and weapon line from the guard, out the back of the jacket, to the reel. A 'D-ring' on the jacket back keeps it from yanking loose mid-action.",
+    fault: "ISSUE: Resistance creeps up over time (flagged at equipment check), or wire snaps inside the sheath.",
+    faultBody: "Wire fatigue concentrates at the two points where the cord bends most — entering the plug shells and at the strain-relief by the D-ring. Coil cords loosely for storage rather than wrapping tightly, since tight kinks are what eventually fracture the strands inside."
+  },
+  reelPlug: {
+    name: "Reel Connector",
+    sub: "BODY CORD · STRIP END",
+    label: "Plugs into the reel",
+    title: "Reel Connector",
+    body: "The far end of the body cord plugs into the retractable reel wired into the scoring apparatus. The A, B, and C-line pins are spaced asymmetrically so the plug can only go in one way, preventing a backwards connection.",
+    fault: "ISSUE: No connection at all, box shows a fault.",
+    faultBody: "First check the obvious: is it fully seated and clipped in? Beyond that, this is the easiest point to test by swapping in a known-good cord, since the reel and box are shared equipment you can't personally repair strip-side."
+  }
+};
+
+const FAULT_KEYS = new Set(["mask","maskCord","lame","bodyCordClip","bodyCordPins","bodyCordWire","reelPlug"]);
+
+// ===================== THREE.JS SETUP =====================
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x12161c);
+scene.fog = new THREE.Fog(0x12161c, 18, 40);
+
+const camera = new THREE.PerspectiveCamera(40, container.clientWidth/container.clientHeight, 0.1, 100);
+camera.position.set(0, 1.5, 13);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+container.appendChild(renderer.domElement);
+
+// lighting — cool key + warm copper rim, like strip lighting
+const keyLight = new THREE.DirectionalLight(0xcfe0f0, 1.1);
+keyLight.position.set(5, 8, 6);
+scene.add(keyLight);
+
+const rimLight = new THREE.DirectionalLight(0xe8965f, 0.55);
+rimLight.position.set(-6, 2, -4);
+scene.add(rimLight);
+
+const ambient = new THREE.AmbientLight(0x3a4250, 1.1);
+scene.add(ambient);
+
+const fillLight = new THREE.PointLight(0x88aacc, 0.4, 20);
+fillLight.position.set(0, -3, 8);
+scene.add(fillLight);
+
+// ===================== GROUP & MATERIALS =====================
+const rig = new THREE.Group();
+scene.add(rig);
+
+const matSteel = new THREE.MeshStandardMaterial({ color: 0xb8c2cc, metalness: 0.75, roughness: 0.35 });
+const matLame = new THREE.MeshStandardMaterial({ color: 0x9aa6b0, metalness: 0.6, roughness: 0.45 });
+const matCopper = new THREE.MeshStandardMaterial({ color: 0xc97a4a, metalness: 0.4, roughness: 0.4 });
+const matBrass = new THREE.MeshStandardMaterial({ color: 0xd4af6a, metalness: 0.7, roughness: 0.3 });
+const matDark = new THREE.MeshStandardMaterial({ color: 0x2a323e, metalness: 0.2, roughness: 0.7 });
+const matClip = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, metalness: 0.8, roughness: 0.25 });
+
+// Helper: tube along points
+function makeTube(points, radius, material, segments=40){
+  const curve = new THREE.CatmullRomCurve3(points);
+  const geometry = new THREE.TubeGeometry(curve, segments, radius, 8, false);
+  return new THREE.Mesh(geometry, material);
+}
+
+const interactiveObjects = []; // {mesh, key}
+
+function registerInteractive(mesh, key){
+  mesh.userData.partKey = key;
+  interactiveObjects.push(mesh);
+}
+
+// ---------- LAME (shirt shape: torso + shoulders + sleeves + collar) ----------
+const lameGroup = new THREE.Group();
+
+// torso — slightly tapered, like a fitted jacket
+const lameTorso = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.25, 2.7, 20), matLame);
+lameTorso.position.y = 1.45;
+lameGroup.add(lameTorso);
+
+// shoulder yoke — wider than torso, narrows toward the collar
+const lameShoulders = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 1.05, 0.6, 20), matLame);
+lameShoulders.position.y = 3.1;
+lameGroup.add(lameShoulders);
+
+// collar ring — closes the neck opening, this is what the mask will rest on
+const lameCollar = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.1, 10, 20), matLame);
+lameCollar.position.y = 3.42;
+lameCollar.rotation.x = Math.PI/2;
+lameGroup.add(lameCollar);
+
+// sleeve stubs — angled slightly down and out from the shoulders
+const sleeveGeo = new THREE.CylinderGeometry(0.32, 0.42, 1.5, 14);
+const sleeveL = new THREE.Mesh(sleeveGeo, matLame);
+sleeveL.position.set(-1.45, 2.85, 0);
+sleeveL.rotation.z = Math.PI/2.6;
+lameGroup.add(sleeveL);
+const sleeveR = new THREE.Mesh(sleeveGeo, matLame);
+sleeveR.position.set(1.45, 2.85, 0);
+sleeveR.rotation.z = -Math.PI/2.6;
+lameGroup.add(sleeveR);
+
+registerInteractive(lameTorso, 'lame');
+registerInteractive(lameShoulders, 'lame');
+registerInteractive(lameCollar, 'lame');
+registerInteractive(sleeveL, 'lame');
+registerInteractive(sleeveR, 'lame');
+rig.add(lameGroup);
+
+// faint seam lines on torso for texture
+for(let i=0;i<6;i++){
+  const seam = new THREE.Mesh(
+    new THREE.TorusGeometry(1.1 + i*0.005, 0.005, 6, 24),
+    new THREE.MeshBasicMaterial({color:0x5a6472, transparent:true, opacity:0.4})
+  );
+  seam.rotation.x = Math.PI/2;
+  seam.position.y = 0.3 + i*0.45;
+  lameGroup.add(seam);
+}
+
+// ---------- MASK (sits directly on the collar) ----------
+const maskGroup = new THREE.Group();
+const maskY = 4.55; // lowered so the dome base meets the collar ring
+const maskDome = new THREE.Mesh(new THREE.SphereGeometry(1.15, 24, 16, 0, Math.PI*2, 0, Math.PI*0.62), matSteel);
+maskDome.position.y = maskY;
+maskGroup.add(maskDome);
+// mesh lines suggestion (wireframe overlay)
+const maskWire = new THREE.Mesh(
+  new THREE.SphereGeometry(1.17, 16, 10, 0, Math.PI*2, 0, Math.PI*0.62),
+  new THREE.MeshBasicMaterial({ color: 0x6b7686, wireframe: true, transparent:true, opacity:0.5 })
+);
+maskWire.position.y = maskY;
+maskGroup.add(maskWire);
+// short bib/throat guard closing the visual gap between mask base and collar
+const maskBib = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.5, 0.5, 16), matSteel);
+maskBib.position.y = maskY - 0.65;
+maskGroup.add(maskBib);
+registerInteractive(maskDome, 'mask');
+registerInteractive(maskBib, 'mask');
+rig.add(maskGroup);
+
+// ---------- MASK CORD (short — mask bib to collar, since they now sit close together) ----------
+const maskCordPts = [
+  new THREE.Vector3(0.55, maskY - 0.95, 0.35),
+  new THREE.Vector3(0.62, maskY - 1.15, 0.45),
+  new THREE.Vector3(0.55, maskY - 1.3, 0.4),
+  new THREE.Vector3(0.4, 3.45, 0.3)
+];
+const maskCordTube = makeTube(maskCordPts, 0.045, matCopper);
+registerInteractive(maskCordTube, 'maskCord');
+rig.add(maskCordTube);
+
+// small clip blobs at each end of mask cord
+const clipGeo = new THREE.SphereGeometry(0.09, 10, 8);
+const maskClipTop = new THREE.Mesh(clipGeo, matClip);
+maskClipTop.position.copy(maskCordPts[0]);
+rig.add(maskClipTop);
+const maskClipBottom = new THREE.Mesh(clipGeo, matClip);
+maskClipBottom.position.copy(maskCordPts[maskCordPts.length-1]);
+rig.add(maskClipBottom);
+
+// ---------- Alligator clip on lame hem (weapon side) ----------
+const hemClipGroup = new THREE.Group();
+const hemClipBody = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.14, 0.18), matClip);
+hemClipGroup.add(hemClipBody);
+hemClipGroup.position.set(1.05, 0.15, 0.55);
+registerInteractive(hemClipBody, 'bodyCordClip');
+rig.add(hemClipGroup);
+
+// ---------- Body cord: from hem clip, down sleeve area, to back, down to reel ----------
+const bodyCordUpperPts = [
+  new THREE.Vector3(1.05, 0.15, 0.55),
+  new THREE.Vector3(1.3, 0.6, 0.3),
+  new THREE.Vector3(1.45, 1.4, -0.1),
+  new THREE.Vector3(1.5, 2.2, -0.4),
+];
+const bodyCordUpperTube = makeTube(bodyCordUpperPts, 0.05, matCopper);
+registerInteractive(bodyCordUpperTube, 'bodyCordWire');
+rig.add(bodyCordUpperTube);
+
+// weapon plug branching off near the "guard" area
+const weaponPlugPts = [
+  new THREE.Vector3(1.5, 2.2, -0.4),
+  new THREE.Vector3(2.1, 2.55, -0.7),
+  new THREE.Vector3(2.7, 2.7, -0.9),
+];
+const weaponPlugTube = makeTube(weaponPlugPts, 0.045, matCopper);
+registerInteractive(weaponPlugTube, 'bodyCordPins');
+rig.add(weaponPlugTube);
+
+const plugConnector = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.3, 10), matBrass);
+plugConnector.position.set(2.95, 2.78, -1.0);
+plugConnector.rotation.z = Math.PI/2.3;
+registerInteractive(plugConnector, 'bodyCordPins');
+rig.add(plugConnector);
+
+// sabre blade suggestion (simple long thin box) coming off the plug — vertical, pointing up
+const bladeGroup = new THREE.Group();
+const blade = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.2, 0.06), matSteel);
+blade.position.set(2.95, 4.45, -1.0);
+bladeGroup.add(blade);
+const guard = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.08, 16), matSteel);
+guard.position.set(2.95, 2.85, -1.0);
+bladeGroup.add(guard);
+rig.add(bladeGroup);
+
+// lower body cord run: down the body to the reel (shortened — reel sits close to the hem)
+const bodyCordLowerPts = [
+  new THREE.Vector3(1.5, 2.2, -0.4),
+  new THREE.Vector3(1.0, 1.2, -0.7),
+  new THREE.Vector3(0.55, 0.2, -0.95),
+  new THREE.Vector3(0.3, -0.7, -1.1),
+];
+const bodyCordLowerTube = makeTube(bodyCordLowerPts, 0.05, matCopper);
+registerInteractive(bodyCordLowerTube, 'bodyCordWire');
+rig.add(bodyCordLowerTube);
+
+// reel connector — now positioned close to the torso/hem instead of far below
+const reelPlugGroup = new THREE.Group();
+const reelHousing = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.4, 12), matBrass);
+reelHousing.position.set(0.25, -0.9, -1.15);
+reelHousing.rotation.x = Math.PI/2.4;
+reelPlugGroup.add(reelHousing);
+registerInteractive(reelHousing, 'reelPlug');
+rig.add(reelPlugGroup);
+
+const reelBox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.5), matDark);
+reelBox.position.set(0.1, -1.35, -1.4);
+rig.add(reelBox);
+const reelSpool = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.15, 16), matClip);
+reelSpool.rotation.z = Math.PI/2;
+reelSpool.position.set(0.1, -1.3, -1.05);
+rig.add(reelSpool);
+
+// center the whole rig
+rig.position.y = -1.0;
+
+// ===================== CAMERA CONTROLS (manual orbit, no extra deps) =====================
+let isDragging = false;
+let prevMouse = { x:0, y:0 };
+let rotationY = 0.4;
+let rotationX = -0.05;
+let targetRotY = rotationY;
+let targetRotX = rotationX;
+let distance = 13;
+let targetDistance = 13;
+let autoRotate = true;
+
+function updateCameraPosition(){
+  const x = distance * Math.sin(rotationY) * Math.cos(rotationX);
+  const z = distance * Math.cos(rotationY) * Math.cos(rotationX);
+  const y = distance * Math.sin(rotationX) + 1.0;
+  camera.position.set(x, y, z);
+  camera.lookAt(0, 0.5, 0);
+}
+updateCameraPosition();
+
+container.addEventListener('pointerdown', (e) => {
+  isDragging = true;
+  autoRotate = false;
+  document.getElementById('mode-rotate').classList.remove('active');
+  prevMouse = { x: e.clientX, y: e.clientY };
+});
+window.addEventListener('pointerup', () => { isDragging = false; });
+window.addEventListener('pointermove', (e) => {
+  if(!isDragging) return;
+  const dx = e.clientX - prevMouse.x;
+  const dy = e.clientY - prevMouse.y;
+  targetRotY -= dx * 0.0055;
+  targetRotX = Math.max(-0.8, Math.min(0.8, targetRotX - dy * 0.0045));
+  prevMouse = { x: e.clientX, y: e.clientY };
+});
+container.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  targetDistance = Math.max(6, Math.min(22, targetDistance + e.deltaY * 0.01));
+}, { passive:false });
+
+// touch pinch (basic)
+let lastPinchDist = null;
+container.addEventListener('touchmove', (e) => {
+  if(e.touches.length === 2){
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if(lastPinchDist != null){
+      targetDistance = Math.max(6, Math.min(22, targetDistance - (dist - lastPinchDist) * 0.02));
+    }
+    lastPinchDist = dist;
+  }
+}, { passive:true });
+container.addEventListener('touchend', () => { lastPinchDist = null; });
+
+// ===================== RAYCAST HOVER =====================
+const raycaster = new THREE.Raycaster();
+const mouseVec = new THREE.Vector2();
+const tooltip = document.getElementById('tooltip');
+let hoveredKey = null;
+let faultMode = false;
+
+function showTooltip(key, clientX, clientY){
+  const data = PARTS[key];
+  if(!data) return;
+  const rect = container.getBoundingClientRect();
+  let left = clientX - rect.left + 18;
+  let top = clientY - rect.top + 10;
+  if(left + 300 > rect.width) left = clientX - rect.left - 318;
+  if(top + 160 > rect.height) top = clientY - rect.top - 170;
+
+  tooltip.style.left = left + 'px';
+  tooltip.style.top = top + 'px';
+  tooltip.classList.toggle('fault', faultMode);
+
+  let html = `<div class="tt-label">${data.sub}</div><div class="tt-title">${data.title}</div><div>${data.body}</div>`;
+  if(faultMode && data.fault){
+    html += `<div class="tt-section"><div class="tt-section-label">${data.fault}</div><div>${data.faultBody}</div></div>`;
+  }
+  tooltip.innerHTML = html;
+  tooltip.style.opacity = '1';
+}
+
+function hideTooltip(){
+  tooltip.style.opacity = '0';
+  hoveredKey = null;
+  highlightPart(null);
+}
+
+const originalEmissive = new Map();
+function highlightPart(key){
+  interactiveObjects.forEach(obj => {
+    if(!originalEmissive.has(obj)) originalEmissive.set(obj, obj.material.emissive ? obj.material.emissive.clone() : null);
+  });
+  interactiveObjects.forEach(obj => {
+    if(!obj.material.emissive) return;
+    if(key && obj.userData.partKey === key){
+      obj.material.emissive.setHex(faultMode ? 0xd6553f : 0xe8965f);
+      obj.material.emissiveIntensity = 0.55;
+    } else {
+      obj.material.emissive.copy(originalEmissive.get(obj) || new THREE.Color(0x000000));
+      obj.material.emissiveIntensity = 0;
+    }
+  });
+}
+
+container.addEventListener('pointermove', (e) => {
+  const rect = container.getBoundingClientRect();
+  mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(mouseVec, camera);
+  const intersects = raycaster.intersectObjects(interactiveObjects);
+
+  if(intersects.length > 0){
+    const key = intersects[0].object.userData.partKey;
+    if(key !== hoveredKey){
+      hoveredKey = key;
+      highlightPart(key);
+      setActiveLegend(key);
+    }
+    showTooltip(key, e.clientX, e.clientY);
+  } else {
+    if(hoveredKey !== null) hideTooltip();
+    setActiveLegend(null);
+  }
+});
+
+container.addEventListener('pointerleave', hideTooltip);
+
+// ===================== LEGEND PANEL =====================
+const legendEl = document.getElementById('legend');
+const legendOrder = ['mask','maskCord','lame','bodyCordClip','bodyCordPins','bodyCordWire','reelPlug'];
+legendOrder.forEach(key => {
+  const data = PARTS[key];
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.dataset.key = key;
+  item.innerHTML = `<div class="li-name">${data.name}</div><div class="li-sub">${data.sub}</div>`;
+  item.addEventListener('mouseenter', () => {
+    hoveredKey = key;
+    highlightPart(key);
+    setActiveLegend(key);
+    const rect = container.getBoundingClientRect();
+    showTooltip(key, rect.left + rect.width/2, rect.top + rect.height/2);
+  });
+  item.addEventListener('mouseleave', hideTooltip);
+  legendEl.appendChild(item);
+});
+
+function setActiveLegend(key){
+  document.querySelectorAll('.legend-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.key === key);
+  });
+}
+
+// ===================== MODE TOGGLES =====================
+document.getElementById('mode-rotate').addEventListener('click', (e) => {
+  autoRotate = !autoRotate;
+  e.target.classList.toggle('active', autoRotate);
+});
+document.getElementById('mode-fault').addEventListener('click', (e) => {
+  faultMode = !faultMode;
+  e.target.classList.toggle('active', faultMode);
+  if(hoveredKey) highlightPart(hoveredKey);
+});
+
+// ===================== RESIZE =====================
+window.addEventListener('resize', () => {
+  camera.aspect = container.clientWidth / container.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(container.clientWidth, container.clientHeight);
+});
+
+// ===================== ANIMATE =====================
+function animate(){
+  requestAnimationFrame(animate);
+  if(autoRotate && !isDragging){
+    targetRotY += 0.0028;
+  }
+  rotationY += (targetRotY - rotationY) * 0.08;
+  rotationX += (targetRotX - rotationX) * 0.08;
+  distance += (targetDistance - distance) * 0.08;
+  updateCameraPosition();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
